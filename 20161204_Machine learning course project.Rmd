@@ -1,0 +1,80 @@
+---
+title: 'Coursera: Practical Machine Learning Prediction Assignment'
+author: "C.Wang"
+date: "Dec 02, 2016"
+output: html_document
+---
+
+## Aim
+
+Nowadays, heath or fitness tracking devices such as Jawbone Up, Nike FuelBand, and Fitbit allow people to collect a large amount of data about personal activity relatively inexpensively. However, most of the time people pay more attention to the "quantity" rather than the "quality" of a particular activity they do.
+The aim of this project is to predict how well people perform their activities by using the data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## Load packages that we need
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+## Read in the data
+
+```{r}
+
+training <- read.csv("~/R/Machine Learning/pml-training.csv", na.strings=c("NA","")) 
+testing <- read.csv("~/R/Machine Learning/pml-testing.csv", na.strings=c("NA","")) 
+dim(training)
+dim(testing)
+
+```
+
+The training data set contains 19622 observations and 160 variables, and the testing data set contains 20 observations and 160 variables. 
+
+## Data processing
+
+First, we remove the missing values, and followed by removing variables that are irrelevant for prediction.
+```{r}
+
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+training <- training[,-c(1,2,3,4,5)]
+testing <- testing[,-c(1,2,3,4,5)]
+dim(training)
+dim(testing)
+```
+
+## Spliting the data for cross-validation
+
+Afterwards, we can split the training set into a pure training data part (70%) and a validation data part (30%). 
+
+```{r}
+set.seed(1500) 
+inTrain <- createDataPartition(training$classe, p=0.70, list=F)
+trainData <- training[inTrain, ]
+testData <- training[-inTrain, ]
+```
+
+## Model Building and cross-validation
+
+Next, we use the Random Forest algorithm for prediction.
+
+```{r}
+model <- train(classe ~ ., data=trainData, method="rf", trControl = trainControl(method = "cv", number = 5))
+model
+```
+
+Then, we estimate the performance of the model with validation data set. 
+
+```{r}
+predict <- predict(model, testData)
+confusionMatrix(testData$classe, predict)
+```
+
+## Predicting for testing Data Set
+
+Finally, we apply the model to the original testing data set. 
+```{r}
+result <- predict(model, testing)
+result
+```
+
